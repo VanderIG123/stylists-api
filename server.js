@@ -12,6 +12,19 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// In-memory storage for stylist credentials (email -> password)
+// In production, use a database with hashed passwords (bcrypt)
+const stylistCredentials = new Map();
+
+// Initialize with any existing stylists (for demo purposes)
+// In production, credentials would be loaded from a database
+stylists.forEach(stylist => {
+  // Default password for existing stylists (they should reset it)
+  if (!stylistCredentials.has(stylist.email.toLowerCase())) {
+    stylistCredentials.set(stylist.email.toLowerCase(), 'default123');
+  }
+});
+
 // Ensure uploads directories exist
 const uploadsDir = join(__dirname, 'uploads');
 const profilesDir = join(uploadsDir, 'profiles');
@@ -109,6 +122,7 @@ app.post('/api/stylists', upload.fields([
     const {
       name,
       email,
+      password,
       phone,
       address,
       specialty,
@@ -141,16 +155,25 @@ app.post('/api/stylists', upload.fields([
       `http://localhost:${PORT}/uploads/portfolio/${file.filename}`
     );
 
-    // Validate required fields
-    if (!name || !email || !phone || !address || !specialty || !hairTextureTypes || 
+    // Validate required fields (including password)
+    if (!name || !email || !password || !phone || !address || !specialty || !hairTextureTypes || 
         !yearsOfExperience || !rate || !hours || !currentAvailability || 
         !willingToTravel || !about) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields',
-        required: ['name', 'email', 'phone', 'address', 'specialty', 'hairTextureTypes', 
+        required: ['name', 'email', 'password', 'phone', 'address', 'specialty', 'hairTextureTypes', 
                    'yearsOfExperience', 'rate', 'hours', 'currentAvailability', 
                    'willingToTravel', 'about']
+      });
+    }
+
+    // Check if email already exists
+    const emailLower = email.trim().toLowerCase();
+    if (stylistCredentials.has(emailLower)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email already registered. Please use a different email or log in.'
       });
     }
 
@@ -225,22 +248,77 @@ app.post('/api/stylists', upload.fields([
         : []
     };
 
+    // Store password (in production, hash with bcrypt before storing)
+    stylistCredentials.set(emailLower, password.trim());
+
     // Add to stylists array
     stylists.push(newStylist);
 
     // Note: In a production app, you'd save to a database
     // For now, this is stored in memory and will reset on server restart
+    // Passwords should be hashed with bcrypt in production
 
+    // Note: password is stored in stylistCredentials map, not in stylist object
     res.status(201).json({
       success: true,
       message: 'Stylist registered successfully',
-      data: newStylist
+      data: newStylist // Password is not included in stylist object
     });
   } catch (error) {
     console.error('Error registering stylist:', error);
     res.status(500).json({
       success: false,
       message: 'Error registering stylist',
+      error: error.message
+    });
+  }
+});
+
+// POST /api/stylists/login - Login for registered stylists
+app.post('/api/stylists/login', (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    const emailLower = email.trim().toLowerCase();
+    const storedPassword = stylistCredentials.get(emailLower);
+
+    // Check if email exists and password matches
+    if (!storedPassword || storedPassword !== password.trim()) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Find the stylist by email
+    const stylist = stylists.find(s => s.email.toLowerCase() === emailLower);
+
+    if (!stylist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Stylist account not found'
+      });
+    }
+
+    // Return stylist data (without password)
+    res.json({
+      success: true,
+      message: 'Login successful',
+      data: stylist
+    });
+  } catch (error) {
+    console.error('Error during login:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error during login',
       error: error.message
     });
   }
@@ -262,5 +340,6 @@ app.listen(PORT, () => {
   console.log(`  GET /api/stylists - Get all stylists`);
   console.log(`  GET /api/stylists/:id - Get a single stylist by ID`);
   console.log(`  POST /api/stylists - Register a new stylist`);
+  console.log(`  POST /api/stylists/login - Login for stylists`);
   console.log(`  GET /health - Health check`);
 });
