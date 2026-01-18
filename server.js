@@ -1,13 +1,58 @@
 import express from 'express';
 import cors from 'cors';
+import multer from 'multer';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { stylists } from './data/stylists.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Ensure uploads directories exist
+const uploadsDir = join(__dirname, 'uploads');
+const profilesDir = join(uploadsDir, 'profiles');
+const portfolioDir = join(uploadsDir, 'portfolio');
+
+[uploadsDir, profilesDir, portfolioDir].forEach(dir => {
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+});
+
+// Configure multer for file storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    if (file.fieldname === 'profilePicture') {
+      cb(null, profilesDir);
+    } else if (file.fieldname === 'portfolioPictures') {
+      cb(null, portfolioDir);
+    } else {
+      cb(null, uploadsDir);
+    }
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = file.originalname.split('.').pop();
+    cb(null, `${file.fieldname}-${uniqueSuffix}.${ext}`);
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(uploadsDir));
 
 // Routes
 
@@ -54,6 +99,153 @@ app.get('/api/stylists/:id', (req, res) => {
   }
 });
 
+// POST /api/stylists - Register a new stylist
+app.post('/api/stylists', upload.fields([
+  { name: 'profilePicture', maxCount: 1 },
+  { name: 'portfolioPictures', maxCount: 10 }
+]), (req, res) => {
+  try {
+    // Parse text fields from form data
+    const {
+      name,
+      email,
+      phone,
+      address,
+      specialty,
+      hairTextureTypes,
+      yearsOfExperience,
+      rate,
+      hours,
+      currentAvailability,
+      willingToTravel,
+      accommodations,
+      lastMinuteBookingsAllowed,
+      streetParkingAvailable,
+      cancellationPolicy,
+      acceptedPaymentTypes,
+      services,
+      about,
+      products
+    } = req.body;
+
+    // Handle uploaded files
+    const profilePictureFile = req.files?.['profilePicture']?.[0];
+    const portfolioFiles = req.files?.['portfolioPictures'] || [];
+    
+    // Generate URLs for uploaded files
+    const profilePictureUrl = profilePictureFile 
+      ? `http://localhost:${PORT}/uploads/profiles/${profilePictureFile.filename}`
+      : null;
+    
+    const portfolioUrls = portfolioFiles.map(file => 
+      `http://localhost:${PORT}/uploads/portfolio/${file.filename}`
+    );
+
+    // Validate required fields
+    if (!name || !email || !phone || !address || !specialty || !hairTextureTypes || 
+        !yearsOfExperience || !rate || !hours || !currentAvailability || 
+        !willingToTravel || !about) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields',
+        required: ['name', 'email', 'phone', 'address', 'specialty', 'hairTextureTypes', 
+                   'yearsOfExperience', 'rate', 'hours', 'currentAvailability', 
+                   'willingToTravel', 'about']
+      });
+    }
+
+    // Generate new ID (find max ID and add 1)
+    const maxId = stylists.length > 0 ? Math.max(...stylists.map(s => s.id)) : 0;
+    const newId = maxId + 1;
+
+    // Parse services if it's a JSON string
+    let parsedServices = [];
+    if (services) {
+      try {
+        parsedServices = typeof services === 'string' ? JSON.parse(services) : services;
+      } catch (e) {
+        parsedServices = [];
+      }
+    }
+
+    // Parse hair texture types
+    let parsedHairTextureTypes = '';
+    if (hairTextureTypes) {
+      parsedHairTextureTypes = typeof hairTextureTypes === 'string' 
+        ? hairTextureTypes 
+        : (Array.isArray(hairTextureTypes) ? hairTextureTypes.join(', ') : '');
+    }
+
+    // Parse accepted payment types
+    let parsedAcceptedPaymentTypes = '';
+    if (acceptedPaymentTypes) {
+      parsedAcceptedPaymentTypes = typeof acceptedPaymentTypes === 'string'
+        ? acceptedPaymentTypes
+        : (Array.isArray(acceptedPaymentTypes) ? acceptedPaymentTypes.join(', ') : '');
+    }
+
+    // Create new stylist object matching the data structure
+    const newStylist = {
+      id: newId,
+      name: name ? name.trim() : '',
+      profilePicture: profilePictureUrl || `https://i.pravatar.cc/200?img=${newId}`,
+      address: address.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      rate: rate.trim(),
+      hours: hours.trim(),
+      currentAvailability: currentAvailability.trim(),
+      willingToTravel: willingToTravel.trim(),
+      yearsOfExperience: yearsOfExperience.trim(),
+      specialty: specialty.trim(),
+      hairTextureTypes: parsedHairTextureTypes,
+      accommodations: accommodations ? accommodations.trim() : '',
+      lastMinuteBookingsAllowed: lastMinuteBookingsAllowed || '',
+      streetParkingAvailable: streetParkingAvailable || '',
+      cancellationPolicy: cancellationPolicy || '',
+      acceptedPaymentTypes: parsedAcceptedPaymentTypes,
+      services: Array.isArray(parsedServices) && parsedServices.length > 0
+        ? parsedServices.filter(s => s.name && s.name.trim()).map(service => {
+            const serviceObj = {
+              name: service.name.trim(),
+              duration: service.duration ? service.duration.trim() : ''
+            };
+            if (service.price && service.price.trim()) {
+              serviceObj.price = service.price.trim();
+            }
+            return serviceObj;
+          })
+        : [],
+      about: about ? about.trim() : '',
+      portfolio: portfolioUrls.length > 0
+        ? portfolioUrls
+        : [],
+      products: Array.isArray(products) && products.length > 0
+        ? products
+        : []
+    };
+
+    // Add to stylists array
+    stylists.push(newStylist);
+
+    // Note: In a production app, you'd save to a database
+    // For now, this is stored in memory and will reset on server restart
+
+    res.status(201).json({
+      success: true,
+      message: 'Stylist registered successfully',
+      data: newStylist
+    });
+  } catch (error) {
+    console.error('Error registering stylist:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error registering stylist',
+      error: error.message
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({
@@ -69,5 +261,6 @@ app.listen(PORT, () => {
   console.log(`API endpoints:`);
   console.log(`  GET /api/stylists - Get all stylists`);
   console.log(`  GET /api/stylists/:id - Get a single stylist by ID`);
+  console.log(`  POST /api/stylists - Register a new stylist`);
   console.log(`  GET /health - Health check`);
 });
