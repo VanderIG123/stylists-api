@@ -61,8 +61,8 @@ const upload = multer({
 
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' })); // Increase limit for large JSON payloads (images, portfolio)
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(uploadsDir));
@@ -324,6 +324,132 @@ app.post('/api/stylists/login', (req, res) => {
   }
 });
 
+// PUT /api/stylists/:id - Update a stylist's profile
+app.put('/api/stylists/:id', (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    console.log(`PUT /api/stylists/${id} - Updating stylist profile`);
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
+    const stylistIndex = stylists.findIndex(s => s.id === id);
+    
+    if (stylistIndex === -1) {
+      console.log(`Stylist with ID ${id} not found`);
+      return res.status(404).json({
+        success: false,
+        message: 'Stylist not found'
+      });
+    }
+    
+    console.log(`Found stylist at index ${stylistIndex}:`, stylists[stylistIndex].name);
+
+    const {
+      name,
+      email,
+      phone,
+      address,
+      profilePicture,
+      specialty,
+      hairTextureTypes,
+      yearsOfExperience,
+      rate,
+      hours,
+      currentAvailability,
+      willingToTravel,
+      accommodations,
+      lastMinuteBookingsAllowed,
+      streetParkingAvailable,
+      cancellationPolicy,
+      acceptedPaymentTypes,
+      services,
+      about,
+      portfolio,
+      products
+    } = req.body;
+
+    // Get existing stylist
+    const existingStylist = stylists[stylistIndex];
+    
+    // Update only provided fields (allow partial updates)
+    const updatedStylist = {
+      ...existingStylist,
+      ...(name && { name: name.trim() }),
+      ...(email && { email: email.trim().toLowerCase() }),
+      ...(phone && { phone: phone.trim() }),
+      ...(address && { address: address.trim() }),
+      ...(profilePicture && { profilePicture }),
+      ...(specialty && { specialty: specialty.trim() }),
+      ...(hairTextureTypes !== undefined && { 
+        hairTextureTypes: typeof hairTextureTypes === 'string' 
+          ? hairTextureTypes.trim() 
+          : (Array.isArray(hairTextureTypes) ? hairTextureTypes.join(', ') : existingStylist.hairTextureTypes)
+      }),
+      ...(yearsOfExperience && { yearsOfExperience: yearsOfExperience.trim() }),
+      ...(rate && { rate: rate.trim() }),
+      ...(hours && { hours: hours.trim() }),
+      ...(currentAvailability && { currentAvailability: currentAvailability.trim() }),
+      ...(willingToTravel && { willingToTravel: willingToTravel.trim() }),
+      ...(accommodations !== undefined && { accommodations: accommodations ? accommodations.trim() : '' }),
+      ...(lastMinuteBookingsAllowed !== undefined && { lastMinuteBookingsAllowed: lastMinuteBookingsAllowed || '' }),
+      ...(streetParkingAvailable !== undefined && { streetParkingAvailable: streetParkingAvailable || '' }),
+      ...(cancellationPolicy !== undefined && { cancellationPolicy: cancellationPolicy || '' }),
+      ...(acceptedPaymentTypes !== undefined && {
+        acceptedPaymentTypes: typeof acceptedPaymentTypes === 'string'
+          ? acceptedPaymentTypes.trim()
+          : (Array.isArray(acceptedPaymentTypes) ? acceptedPaymentTypes.join(', ') : existingStylist.acceptedPaymentTypes)
+      }),
+      ...(services !== undefined && {
+        services: Array.isArray(services) && services.length > 0
+          ? services.filter(s => s.name && s.name.trim()).map(service => {
+              const serviceObj = {
+                name: service.name.trim(),
+                duration: service.duration ? service.duration.trim() : ''
+              };
+              if (service.price && service.price.trim()) {
+                serviceObj.price = service.price.trim();
+              }
+              return serviceObj;
+            })
+          : []
+      }),
+      ...(about !== undefined && { about: about ? about.trim() : '' }),
+      ...(portfolio !== undefined && {
+        portfolio: Array.isArray(portfolio) ? portfolio : []
+      }),
+      ...(products !== undefined && {
+        products: Array.isArray(products) ? products : []
+      })
+    };
+
+    // Update the stylist in the array
+    stylists[stylistIndex] = updatedStylist;
+
+    // If email changed, update credentials map key (but keep same password)
+    if (email && email.trim().toLowerCase() !== existingStylist.email.toLowerCase()) {
+      const oldEmail = existingStylist.email.toLowerCase();
+      const newEmail = email.trim().toLowerCase();
+      if (stylistCredentials.has(oldEmail)) {
+        const password = stylistCredentials.get(oldEmail);
+        stylistCredentials.delete(oldEmail);
+        stylistCredentials.set(newEmail, password);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Stylist profile updated successfully',
+      data: updatedStylist
+    });
+  } catch (error) {
+    console.error('Error updating stylist:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating stylist profile',
+      error: error.message
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({
@@ -341,5 +467,6 @@ app.listen(PORT, () => {
   console.log(`  GET /api/stylists/:id - Get a single stylist by ID`);
   console.log(`  POST /api/stylists - Register a new stylist`);
   console.log(`  POST /api/stylists/login - Login for stylists`);
+  console.log(`  PUT /api/stylists/:id - Update a stylist profile`);
   console.log(`  GET /health - Health check`);
 });
