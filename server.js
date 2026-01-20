@@ -22,6 +22,9 @@ const userCredentials = new Map();
 // In-memory storage for users/customers
 const users = [];
 
+// In-memory storage for appointments
+const appointments = [];
+
 // Initialize with any existing stylists (for demo purposes)
 // In production, credentials would be loaded from a database
 stylists.forEach(stylist => {
@@ -137,6 +140,7 @@ app.post('/api/stylists', upload.fields([
       rate,
       hours,
       currentAvailability,
+      availableNow,
       willingToTravel,
       accommodations,
       lastMinuteBookingsAllowed,
@@ -224,6 +228,7 @@ app.post('/api/stylists', upload.fields([
       rate: rate.trim(),
       hours: hours.trim(),
       currentAvailability: currentAvailability.trim(),
+      availableNow: availableNow === true || availableNow === 'true' || false,
       willingToTravel: willingToTravel.trim(),
       yearsOfExperience: yearsOfExperience.trim(),
       specialty: specialty.trim(),
@@ -477,6 +482,7 @@ app.put('/api/stylists/:id', (req, res) => {
       rate,
       hours,
       currentAvailability,
+      availableNow,
       willingToTravel,
       accommodations,
       lastMinuteBookingsAllowed,
@@ -510,6 +516,7 @@ app.put('/api/stylists/:id', (req, res) => {
       ...(rate && { rate: rate.trim() }),
       ...(hours && { hours: hours.trim() }),
       ...(currentAvailability && { currentAvailability: currentAvailability.trim() }),
+      ...(availableNow !== undefined && { availableNow: availableNow === true || availableNow === 'true' }),
       ...(willingToTravel && { willingToTravel: willingToTravel.trim() }),
       ...(accommodations !== undefined && { accommodations: accommodations ? accommodations.trim() : '' }),
       ...(lastMinuteBookingsAllowed !== undefined && { lastMinuteBookingsAllowed: lastMinuteBookingsAllowed || '' }),
@@ -634,6 +641,112 @@ app.post('/api/users', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error registering user',
+      error: error.message
+    });
+  }
+});
+
+// POST /api/appointments - Create a new appointment
+app.post('/api/appointments', (req, res) => {
+  try {
+    const {
+      stylistId,
+      userId,
+      purpose,
+      date,
+      time,
+      customerName,
+      customerEmail,
+      customerPhone
+    } = req.body;
+
+    if (!stylistId || !purpose || !date || !time) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: stylistId, purpose, date, and time are required'
+      });
+    }
+
+    // Verify stylist exists
+    const stylist = stylists.find(s => s.id === parseInt(stylistId));
+    if (!stylist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Stylist not found'
+      });
+    }
+
+    // Generate new appointment ID
+    const maxId = appointments.length > 0 ? Math.max(...appointments.map(a => a.id)) : 0;
+    const newId = maxId + 1;
+
+    // Create new appointment
+    const newAppointment = {
+      id: newId,
+      stylistId: parseInt(stylistId),
+      userId: userId ? parseInt(userId) : null,
+      purpose: purpose.trim(),
+      date: date.trim(),
+      time: time.trim(),
+      customerName: customerName ? customerName.trim() : '',
+      customerEmail: customerEmail ? customerEmail.trim().toLowerCase() : '',
+      customerPhone: customerPhone ? customerPhone.trim() : '',
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+
+    appointments.push(newAppointment);
+
+    res.status(201).json({
+      success: true,
+      message: 'Appointment booked successfully',
+      data: newAppointment
+    });
+  } catch (error) {
+    console.error('Error booking appointment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error booking appointment',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/appointments - Get appointments (optionally filtered by userId or stylistId)
+app.get('/api/appointments', (req, res) => {
+  try {
+    const { userId, stylistId } = req.query;
+    
+    let filteredAppointments = [...appointments];
+    
+    // Filter by userId if provided
+    if (userId) {
+      const userIdNum = parseInt(userId);
+      filteredAppointments = filteredAppointments.filter(a => a.userId === userIdNum);
+    }
+    
+    // Filter by stylistId if provided
+    if (stylistId) {
+      const stylistIdNum = parseInt(stylistId);
+      filteredAppointments = filteredAppointments.filter(a => a.stylistId === stylistIdNum);
+    }
+    
+    // Sort by date and time (most recent first)
+    filteredAppointments.sort((a, b) => {
+      const dateA = new Date(a.date + 'T' + a.time);
+      const dateB = new Date(b.date + 'T' + b.time);
+      return dateB - dateA;
+    });
+    
+    res.json({
+      success: true,
+      data: filteredAppointments
+    });
+  } catch (error) {
+    console.error('Error fetching appointments:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching appointments',
       error: error.message
     });
   }
