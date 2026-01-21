@@ -691,8 +691,12 @@ app.post('/api/appointments', (req, res) => {
       customerName: customerName ? customerName.trim() : '',
       customerEmail: customerEmail ? customerEmail.trim().toLowerCase() : '',
       customerPhone: customerPhone ? customerPhone.trim() : '',
+      services: req.body.services || [],
       status: 'pending',
-      createdAt: new Date().toISOString()
+      suggestedDate: null,
+      suggestedTime: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
     appointments.push(newAppointment);
@@ -747,6 +751,191 @@ app.get('/api/appointments', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching appointments',
+      error: error.message
+    });
+  }
+});
+
+// PUT /api/appointments/:id/accept - Accept an appointment
+app.put('/api/appointments/:id/accept', (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const appointmentIndex = appointments.findIndex(a => a.id === id);
+    
+    if (appointmentIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found'
+      });
+    }
+    
+    appointments[appointmentIndex].status = 'confirmed';
+    appointments[appointmentIndex].updatedAt = new Date().toISOString();
+    
+    res.json({
+      success: true,
+      message: 'Appointment accepted',
+      data: appointments[appointmentIndex]
+    });
+  } catch (error) {
+    console.error('Error accepting appointment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error accepting appointment',
+      error: error.message
+    });
+  }
+});
+
+// PUT /api/appointments/:id/reject - Reject an appointment
+app.put('/api/appointments/:id/reject', (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const appointmentIndex = appointments.findIndex(a => a.id === id);
+    
+    if (appointmentIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found'
+      });
+    }
+    
+    appointments[appointmentIndex].status = 'cancelled';
+    appointments[appointmentIndex].updatedAt = new Date().toISOString();
+    
+    res.json({
+      success: true,
+      message: 'Appointment rejected',
+      data: appointments[appointmentIndex]
+    });
+  } catch (error) {
+    console.error('Error rejecting appointment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error rejecting appointment',
+      error: error.message
+    });
+  }
+});
+
+// PUT /api/appointments/:id/suggest - Suggest new date/time for an appointment
+app.put('/api/appointments/:id/suggest', (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { suggestedDate, suggestedTime } = req.body;
+    
+    if (!suggestedDate || !suggestedTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'Suggested date and time are required'
+      });
+    }
+    
+    const appointmentIndex = appointments.findIndex(a => a.id === id);
+    
+    if (appointmentIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found'
+      });
+    }
+    
+    appointments[appointmentIndex].suggestedDate = suggestedDate.trim();
+    appointments[appointmentIndex].suggestedTime = suggestedTime.trim();
+    appointments[appointmentIndex].status = 'pending'; // Keep as pending until customer accepts
+    appointments[appointmentIndex].updatedAt = new Date().toISOString();
+    
+    res.json({
+      success: true,
+      message: 'Date/time suggestion sent',
+      data: appointments[appointmentIndex]
+    });
+  } catch (error) {
+    console.error('Error suggesting date/time:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error suggesting date/time',
+      error: error.message
+    });
+  }
+});
+
+// PUT /api/appointments/:id/accept-suggestion - Customer accepts suggested date/time
+app.put('/api/appointments/:id/accept-suggestion', (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const appointmentIndex = appointments.findIndex(a => a.id === id);
+    
+    if (appointmentIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found'
+      });
+    }
+    
+    const appointment = appointments[appointmentIndex];
+    
+    if (!appointment.suggestedDate || !appointment.suggestedTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'No suggestion found for this appointment'
+      });
+    }
+    
+    // Update appointment with suggested date/time
+    appointment.date = appointment.suggestedDate;
+    appointment.time = appointment.suggestedTime;
+    appointment.suggestedDate = null;
+    appointment.suggestedTime = null;
+    appointment.status = 'confirmed'; // Confirm the appointment when customer accepts
+    appointment.updatedAt = new Date().toISOString();
+    
+    res.json({
+      success: true,
+      message: 'Appointment date/time updated successfully',
+      data: appointment
+    });
+  } catch (error) {
+    console.error('Error accepting suggestion:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error accepting suggestion',
+      error: error.message
+    });
+  }
+});
+
+// PUT /api/appointments/:id/reject-suggestion - Customer rejects suggested date/time
+app.put('/api/appointments/:id/reject-suggestion', (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const appointmentIndex = appointments.findIndex(a => a.id === id);
+    
+    if (appointmentIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found'
+      });
+    }
+    
+    const appointment = appointments[appointmentIndex];
+    
+    // Clear the suggestion but keep original date/time
+    appointment.suggestedDate = null;
+    appointment.suggestedTime = null;
+    appointment.status = 'pending'; // Keep as pending since customer rejected suggestion
+    appointment.updatedAt = new Date().toISOString();
+    
+    res.json({
+      success: true,
+      message: 'Suggestion rejected. Original appointment time remains.',
+      data: appointment
+    });
+  } catch (error) {
+    console.error('Error rejecting suggestion:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error rejecting suggestion',
       error: error.message
     });
   }
