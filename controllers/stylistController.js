@@ -1,4 +1,5 @@
 import { stylists, stylistCredentials, saveStylists, saveCredentials } from '../utils/dataStore.js';
+import { hashPassword, comparePassword, isPasswordHashed } from '../utils/passwordUtils.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -52,7 +53,7 @@ export const getStylistById = (req, res) => {
 /**
  * Register a new stylist
  */
-export const registerStylist = (req, res) => {
+export const registerStylist = async (req, res) => {
   try {
     // Parse text fields from form data
     const {
@@ -186,8 +187,9 @@ export const registerStylist = (req, res) => {
         : []
     };
 
-    // Store password (in production, hash with bcrypt before storing)
-    stylistCredentials.set(emailLower, password.trim());
+    // Hash and store password in credentials map
+    const hashedPassword = await hashPassword(password.trim());
+    stylistCredentials.set(emailLower, hashedPassword);
     saveCredentials();
 
     // Add to stylists array
@@ -213,7 +215,7 @@ export const registerStylist = (req, res) => {
 /**
  * Login for registered stylists
  */
-export const loginStylist = (req, res) => {
+export const loginStylist = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -228,12 +230,29 @@ export const loginStylist = (req, res) => {
     const emailLower = email.trim().toLowerCase();
     const storedPassword = stylistCredentials.get(emailLower);
 
-    // Check if email exists and password matches
-    if (!storedPassword || storedPassword !== password.trim()) {
+    // Check if email exists
+    if (!storedPassword) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
+    }
+
+    // Compare password (handles both hashed and plain text for backward compatibility)
+    const passwordMatch = await comparePassword(password.trim(), storedPassword);
+    
+    if (!passwordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // If password was plain text, hash it now for future logins (migration)
+    if (!isPasswordHashed(storedPassword)) {
+      const hashedPassword = await hashPassword(password.trim());
+      stylistCredentials.set(emailLower, hashedPassword);
+      saveCredentials();
     }
 
     // Find the stylist by email
@@ -367,14 +386,14 @@ export const updateStylist = (req, res) => {
     stylists[stylistIndex] = updatedStylist;
     saveStylists();
 
-    // If email changed, update credentials map key (but keep same password)
+    // If email changed, update credentials map key (but keep same password hash)
     if (email && email.trim().toLowerCase() !== existingStylist.email.toLowerCase()) {
       const oldEmail = existingStylist.email.toLowerCase();
       const newEmail = email.trim().toLowerCase();
       if (stylistCredentials.has(oldEmail)) {
-        const password = stylistCredentials.get(oldEmail);
+        const passwordHash = stylistCredentials.get(oldEmail);
         stylistCredentials.delete(oldEmail);
-        stylistCredentials.set(newEmail, password);
+        stylistCredentials.set(newEmail, passwordHash);
         saveCredentials();
       }
     }

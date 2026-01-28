@@ -7,6 +7,7 @@ import {
   loginStylist,
   updateStylist
 } from '../controllers/stylistController.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = express.Router();
 
@@ -20,12 +21,12 @@ router.get('/:id', getStylistById);
 router.post('/', upload.fields([
   { name: 'profilePicture', maxCount: 1 },
   { name: 'portfolioPictures', maxCount: 10 }
-]), registerStylist);
+]), asyncHandler(registerStylist));
 
 // POST /api/stylists/login - Login for registered stylists
-router.post('/login', loginStylist);
+router.post('/login', asyncHandler(loginStylist));
 
 // PUT /api/stylists/:id - Update a stylist profile
-router.put('/:id', updateStylist);
+router.put('/:id', asyncHandler(updateStylist));
 
 export default router;

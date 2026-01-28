@@ -1,9 +1,10 @@
 import { users, userCredentials, saveUsers, saveCredentials } from '../utils/dataStore.js';
+import { hashPassword, comparePassword, isPasswordHashed } from '../utils/passwordUtils.js';
 
 /**
  * Register a new user/customer
  */
-export const registerUser = (req, res) => {
+export const registerUser = async (req, res) => {
   try {
     const {
       name,
@@ -47,8 +48,9 @@ export const registerUser = (req, res) => {
       preferencesArray: preferences ? preferences.split(',').map(p => p.trim()).filter(p => p) : []
     };
 
-    // Store password in credentials map
-    userCredentials.set(emailLower, password.trim());
+    // Hash and store password in credentials map
+    const hashedPassword = await hashPassword(password.trim());
+    userCredentials.set(emailLower, hashedPassword);
     saveCredentials();
 
     // Add to users array
@@ -74,7 +76,7 @@ export const registerUser = (req, res) => {
 /**
  * Login for registered users/customers
  */
-export const loginUser = (req, res) => {
+export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -89,12 +91,29 @@ export const loginUser = (req, res) => {
     const emailLower = email.trim().toLowerCase();
     const storedPassword = userCredentials.get(emailLower);
 
-    // Check if email exists and password matches
-    if (!storedPassword || storedPassword !== password.trim()) {
+    // Check if email exists
+    if (!storedPassword) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
+    }
+
+    // Compare password (handles both hashed and plain text for backward compatibility)
+    const passwordMatch = await comparePassword(password.trim(), storedPassword);
+    
+    if (!passwordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // If password was plain text, hash it now for future logins (migration)
+    if (!isPasswordHashed(storedPassword)) {
+      const hashedPassword = await hashPassword(password.trim());
+      userCredentials.set(emailLower, hashedPassword);
+      saveCredentials();
     }
 
     // Find the user by email
@@ -166,14 +185,14 @@ export const updateUser = (req, res) => {
     users[userIndex] = updatedUser;
     saveUsers();
 
-    // If email changed, update credentials map key (but keep same password)
+    // If email changed, update credentials map key (but keep same password hash)
     if (email && email.trim().toLowerCase() !== existingUser.email.toLowerCase()) {
       const oldEmail = existingUser.email.toLowerCase();
       const newEmail = email.trim().toLowerCase();
       if (userCredentials.has(oldEmail)) {
-        const password = userCredentials.get(oldEmail);
+        const passwordHash = userCredentials.get(oldEmail);
         userCredentials.delete(oldEmail);
-        userCredentials.set(newEmail, password);
+        userCredentials.set(newEmail, passwordHash);
         saveCredentials();
       }
     }
