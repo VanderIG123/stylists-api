@@ -1,5 +1,6 @@
 import { users, userCredentials, saveUsers, saveCredentials } from '../utils/dataStore.js';
 import { hashPassword, comparePassword, isPasswordHashed } from '../utils/passwordUtils.js';
+import { logError } from '../utils/errorSanitizer.js';
 
 /**
  * Register a new user/customer
@@ -64,11 +65,10 @@ export const registerUser = async (req, res) => {
       data: newUser
     });
   } catch (error) {
-    console.error('Error registering user:', error);
+    logError(error, 'registerUser');
     res.status(500).json({
       success: false,
-      message: 'Error registering user',
-      error: error.message
+      message: 'Error registering user. Please try again.'
     });
   }
 };
@@ -133,11 +133,10 @@ export const loginUser = async (req, res) => {
       data: user
     });
   } catch (error) {
-    console.error('Error during user login:', error);
+    logError(error, 'loginUser');
     res.status(500).json({
       success: false,
-      message: 'Error during login',
-      error: error.message
+      message: 'Error during login. Please try again.'
     });
   }
 };
@@ -203,11 +202,10 @@ export const updateUser = (req, res) => {
       data: updatedUser
     });
   } catch (error) {
-    console.error('Error updating user:', error);
+    logError(error, 'updateUser');
     res.status(500).json({
       success: false,
-      message: 'Error updating user profile',
-      error: error.message
+      message: 'Error updating user profile. Please try again.'
     });
   }
 };

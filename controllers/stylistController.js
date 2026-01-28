@@ -1,5 +1,6 @@
 import { stylists, stylistCredentials, saveStylists, saveCredentials } from '../utils/dataStore.js';
 import { hashPassword, comparePassword, isPasswordHashed } from '../utils/passwordUtils.js';
+import { logError } from '../utils/errorSanitizer.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -14,10 +15,10 @@ export const getAllStylists = (req, res) => {
       count: stylists.length
     });
   } catch (error) {
+    logError(error, 'getAllStylists');
     res.status(500).json({
       success: false,
-      message: 'Error fetching stylists',
-      error: error.message
+      message: 'Error fetching stylists. Please try again.'
     });
   }
 };
@@ -42,10 +43,10 @@ export const getStylistById = (req, res) => {
       data: stylist
     });
   } catch (error) {
+    logError(error, 'getStylistById');
     res.status(500).json({
       success: false,
-      message: 'Error fetching stylist',
-      error: error.message
+      message: 'Error fetching stylist. Please try again.'
     });
   }
 };
@@ -203,11 +204,10 @@ export const registerStylist = async (req, res) => {
       data: newStylist // Password is not included in stylist object
     });
   } catch (error) {
-    console.error('Error registering stylist:', error);
+    logError(error, 'registerStylist');
     res.status(500).json({
       success: false,
-      message: 'Error registering stylist',
-      error: error.message
+      message: 'Error registering stylist. Please try again.'
     });
   }
 };
@@ -272,11 +272,10 @@ export const loginStylist = async (req, res) => {
       data: stylist
     });
   } catch (error) {
-    console.error('Error during login:', error);
+    logError(error, 'loginStylist');
     res.status(500).json({
       success: false,
-      message: 'Error during login',
-      error: error.message
+      message: 'Error during login. Please try again.'
     });
   }
 };
@@ -404,11 +403,10 @@ export const updateStylist = (req, res) => {
       data: updatedStylist
     });
   } catch (error) {
-    console.error('Error updating stylist:', error);
+    logError(error, 'updateStylist');
     res.status(500).json({
       success: false,
-      message: 'Error updating stylist profile',
-      error: error.message
+      message: 'Error updating stylist profile. Please try again.'
     });
   }
 };

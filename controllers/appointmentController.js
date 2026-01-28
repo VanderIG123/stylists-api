@@ -1,4 +1,5 @@
 import { stylists, appointments, saveAppointments } from '../utils/dataStore.js';
+import { logError } from '../utils/errorSanitizer.js';
 
 /**
  * Create a new appointment
@@ -64,11 +65,10 @@ export const createAppointment = (req, res) => {
       data: newAppointment
     });
   } catch (error) {
-    console.error('Error booking appointment:', error);
+    logError(error, 'createAppointment');
     res.status(500).json({
       success: false,
-      message: 'Error booking appointment',
-      error: error.message
+      message: 'Error booking appointment. Please try again.'
     });
   }
 };
@@ -106,11 +106,10 @@ export const getAppointments = (req, res) => {
       data: filteredAppointments
     });
   } catch (error) {
-    console.error('Error fetching appointments:', error);
+    logError(error, 'getAppointments');
     res.status(500).json({
       success: false,
-      message: 'Error fetching appointments',
-      error: error.message
+      message: 'Error fetching appointments. Please try again.'
     });
   }
 };
@@ -140,11 +139,10 @@ export const acceptAppointment = (req, res) => {
       data: appointments[appointmentIndex]
     });
   } catch (error) {
-    console.error('Error accepting appointment:', error);
+    logError(error, 'acceptAppointment');
     res.status(500).json({
       success: false,
-      message: 'Error accepting appointment',
-      error: error.message
+      message: 'Error accepting appointment. Please try again.'
     });
   }
 };
@@ -174,11 +172,10 @@ export const rejectAppointment = (req, res) => {
       data: appointments[appointmentIndex]
     });
   } catch (error) {
-    console.error('Error rejecting appointment:', error);
+    logError(error, 'rejectAppointment');
     res.status(500).json({
       success: false,
-      message: 'Error rejecting appointment',
-      error: error.message
+      message: 'Error rejecting appointment. Please try again.'
     });
   }
 };
@@ -219,11 +216,10 @@ export const suggestAppointment = (req, res) => {
       data: appointments[appointmentIndex]
     });
   } catch (error) {
-    console.error('Error suggesting date/time:', error);
+    logError(error, 'suggestAppointment');
     res.status(500).json({
       success: false,
-      message: 'Error suggesting date/time',
-      error: error.message
+      message: 'Error suggesting date/time. Please try again.'
     });
   }
 };
@@ -267,11 +263,10 @@ export const acceptSuggestion = (req, res) => {
       data: appointment
     });
   } catch (error) {
-    console.error('Error accepting suggestion:', error);
+    logError(error, 'acceptSuggestion');
     res.status(500).json({
       success: false,
-      message: 'Error accepting suggestion',
-      error: error.message
+      message: 'Error accepting suggestion. Please try again.'
     });
   }
 };
@@ -306,11 +301,10 @@ export const rejectSuggestion = (req, res) => {
       data: appointment
     });
   } catch (error) {
-    console.error('Error rejecting suggestion:', error);
+    logError(error, 'rejectSuggestion');
     res.status(500).json({
       success: false,
-      message: 'Error rejecting suggestion',
-      error: error.message
+      message: 'Error rejecting suggestion. Please try again.'
     });
   }
 };
