@@ -3,3 +3,7 @@ node_modules/
 *.log
 .DS_Store
 uploads/
+data/stylists.json
+data/users.json
+data/appointments.json
+data/credentials.json
