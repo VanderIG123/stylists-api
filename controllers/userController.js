@@ -1,6 +1,6 @@
 import { users, userCredentials, saveUsers, saveCredentials } from '../utils/dataStore.js';
 import { hashPassword, comparePassword, isPasswordHashed } from '../utils/passwordUtils.js';
-import { logError } from '../utils/errorSanitizer.js';
+import { logError } from '../utils/logger.js';
 
 /**
  * Register a new user/customer

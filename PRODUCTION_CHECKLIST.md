@@ -27,7 +27,7 @@
   - [x] Implement proper password hashing (using `bcryptjs`)
   - [ ] Add JWT tokens or session management for authentication
   - [ ] Implement authorization middleware to protect routes
-  - [ ] Add rate limiting for login/registration endpoints
+  - [x] Add rate limiting for login/registration endpoints (✅ COMPLETED)
 
 - [x] **File Upload Security** ✅ COMPLETED
   - [x] Validate file types strictly (whitelist allowed extensions: JPG, PNG, WEBP)
@@ -36,11 +36,11 @@
   - [ ] Store uploaded files outside web root or use cloud storage (S3, Cloudinary)
   - [x] Generate unique filenames to prevent overwrites
 
-- [ ] **API Security**
-  - [ ] Add rate limiting middleware (e.g., `express-rate-limit`)
-  - [ ] Implement request size limits
-  - [ ] Add helmet.js for security headers
-  - [ ] Disable X-Powered-By header
+- [x] **API Security** ⚠️ PARTIALLY COMPLETED
+  - [x] Add rate limiting middleware (`express-rate-limit`) (✅ COMPLETED)
+  - [x] Implement request size limits (✅ COMPLETED - via express.json/urlencoded limits)
+  - [x] Add helmet.js for security headers (✅ COMPLETED)
+  - [x] Disable X-Powered-By header (✅ COMPLETED - disabled by Helmet)
   - [ ] Implement API key or token validation for sensitive endpoints
 
 ## 🗄️ Data & Persistence
@@ -68,12 +68,12 @@
   - [x] Don't expose sensitive error details in production
   - [x] Implement proper error logging with sanitization
 
-- [ ] **Logging**
-  - [ ] Add structured logging (e.g., `winston`, `pino`)
-  - [ ] Log all API requests (with sanitized sensitive data)
-  - [ ] Log errors with proper context
-  - [ ] Set up log rotation
-  - [ ] Configure log levels (error, warn, info, debug)
+- [x] **Logging** ✅ COMPLETED
+  - [x] Add structured logging (Winston with daily rotation)
+  - [x] Log all API requests (with sanitized sensitive data)
+  - [x] Log errors with proper context
+  - [x] Set up log rotation (daily rotation with compression)
+  - [x] Configure log levels (error, warn, info, debug)
 
 - [ ] **Monitoring**
   - [ ] Set up application monitoring (e.g., PM2, New Relic, DataDog)
@@ -208,11 +208,12 @@
    - [x] Error handling that doesn't expose sensitive info (✅ COMPLETED)
 
 2. **🟡 HIGH PRIORITY:**
-   - Rate limiting
-   - Proper logging
-   - Health check monitoring
-   - Backup strategy
-   - SSL/HTTPS
+   - [x] Rate limiting (✅ COMPLETED)
+   - [x] Proper logging (✅ COMPLETED)
+   - [x] Health check monitoring (✅ COMPLETED - `/health` endpoint exists)
+   - [ ] Backup strategy
+   - [ ] SSL/HTTPS
+   - [x] Helmet.js security headers (✅ COMPLETED)
 
 3. **🟢 MEDIUM PRIORITY:**
    - Database migration (if needed)
@@ -224,9 +225,12 @@
 
 ## Notes
 
-- Current state: API security has been significantly improved with password hashing, input validation, CORS restrictions, environment variables, and secure error handling
+- Current state: API security has been significantly improved with password hashing, input validation, CORS restrictions, environment variables, secure error handling, rate limiting, structured logging, and Helmet.js security headers
 - JSON file storage is fine for MVP but consider database for scale
 - File uploads are secured with type validation and size limits
 - Authentication uses bcryptjs for password hashing
 - Environment variables are properly configured with production validation
-- Still needed: Rate limiting, proper logging, JWT/session management, backup strategy, SSL/HTTPS
+- Rate limiting implemented for login/registration endpoints and general API protection
+- Structured logging implemented with Winston (daily rotation, sanitization, multiple log files)
+- Helmet.js configured with comprehensive security headers (CSP, HSTS, XSS protection, etc.)
+- Still needed: JWT/session management, backup strategy, SSL/HTTPS

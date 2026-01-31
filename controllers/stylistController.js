@@ -1,6 +1,6 @@
 import { stylists, stylistCredentials, saveStylists, saveCredentials } from '../utils/dataStore.js';
 import { hashPassword, comparePassword, isPasswordHashed } from '../utils/passwordUtils.js';
-import { logError } from '../utils/errorSanitizer.js';
+import { logError, logInfo, logDebug } from '../utils/logger.js';
 import { env } from '../config/env.js';
 
 /**
@@ -285,20 +285,19 @@ export const loginStylist = async (req, res) => {
 export const updateStylist = (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    console.log(`PUT /api/stylists/${id} - Updating stylist profile`);
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    logDebug(`PUT /api/stylists/${id} - Updating stylist profile`, { body: req.body });
     
     const stylistIndex = stylists.findIndex(s => s.id === id);
     
     if (stylistIndex === -1) {
-      console.log(`Stylist with ID ${id} not found`);
+      logDebug(`Stylist with ID ${id} not found`);
       return res.status(404).json({
         success: false,
         message: 'Stylist not found'
       });
     }
     
-    console.log(`Found stylist at index ${stylistIndex}:`, stylists[stylistIndex].name);
+    logDebug(`Found stylist at index ${stylistIndex}`, { name: stylists[stylistIndex].name });
 
     const {
       name,

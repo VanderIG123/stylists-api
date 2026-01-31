@@ -1,4 +1,5 @@
-import { getSafeErrorMessage, logError } from '../utils/errorSanitizer.js';
+import { getSafeErrorMessage } from '../utils/errorSanitizer.js';
+import { logError } from '../utils/logger.js';
 
 /**
  * Global error handler middleware
@@ -6,8 +7,14 @@ import { getSafeErrorMessage, logError } from '../utils/errorSanitizer.js';
  * Never exposes sensitive information to clients
  */
 export const errorHandler = (err, req, res, next) => {
-  // Log full error details server-side only
-  logError(err, `${req.method} ${req.path}`);
+  // Log full error details server-side only with context
+  logError(err, {
+    method: req.method,
+    path: req.path,
+    url: req.originalUrl || req.url,
+    ip: req.ip || req.connection.remoteAddress,
+    statusCode: err.status || err.statusCode || 500,
+  });
   
   // Determine status code
   const statusCode = err.status || err.statusCode || 500;

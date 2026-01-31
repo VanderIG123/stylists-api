@@ -103,17 +103,23 @@ export const getSafeErrorMessage = (error, defaultMessage = 'An error occurred')
 
 /**
  * Log error with full details (server-side only)
+ * @deprecated Use logError from utils/logger.js instead
  * @param {Error} error - Error object
  * @param {string} context - Context where error occurred
  */
 export const logError = (error, context = '') => {
-  const timestamp = new Date().toISOString();
-  const contextMsg = context ? `[${context}] ` : '';
-  
-  console.error(`${contextMsg}Error at ${timestamp}:`, {
-    name: error.name,
-    message: error.message,
-    stack: error.stack,
-    ...(error.code && { code: error.code }),
+  // Import logger dynamically to avoid circular dependencies
+  import('../utils/logger.js').then(({ logError: loggerLogError }) => {
+    loggerLogError(error, { context });
+  }).catch(() => {
+    // Fallback to console if logger import fails
+    const timestamp = new Date().toISOString();
+    const contextMsg = context ? `[${context}] ` : '';
+    console.error(`${contextMsg}Error at ${timestamp}:`, {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      ...(error.code && { code: error.code }),
+    });
   });
 };

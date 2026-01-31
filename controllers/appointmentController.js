@@ -1,5 +1,5 @@
 import { stylists, appointments, saveAppointments } from '../utils/dataStore.js';
-import { logError } from '../utils/errorSanitizer.js';
+import { logError } from '../utils/logger.js';
 
 /**
  * Create a new appointment

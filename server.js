@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { paths } from './config/paths.js';
 import { env } from './config/env.js';
 import stylistsRoutes from './routes/stylists.js';
@@ -7,6 +8,8 @@ import usersRoutes from './routes/users.js';
 import appointmentsRoutes from './routes/appointments.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { generalRateLimiter } from './middleware/rateLimiter.js';
+import { requestLogger } from './middleware/requestLogger.js';
+import logger, { logInfo } from './utils/logger.js';
 
 const app = express();
 
@@ -43,11 +46,51 @@ const corsOptions = {
 };
 
 // Middleware
+// Security headers with Helmet.js
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:", "http:"], // Allow images from various sources for uploaded files
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Disable for file uploads
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin resources for uploaded files
+  // Disable X-Powered-By header (already handled by Helmet)
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true
+  },
+  // Configure other security headers
+  noSniff: true, // Prevent MIME type sniffing
+  xssFilter: true, // Enable XSS filter
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  // Permissions policy
+  permissionsPolicy: {
+    features: {
+      geolocation: ["'none'"],
+      microphone: ["'none'"],
+      camera: ["'none'"],
+    },
+  },
+}));
+
 app.use(cors(corsOptions));
 // Apply general rate limiting to all routes (baseline protection)
 app.use(generalRateLimiter);
 app.use(express.json({ limit: `${env.MAX_REQUEST_BODY_SIZE / 1024 / 1024}mb` }));
 app.use(express.urlencoded({ extended: true, limit: `${env.MAX_REQUEST_BODY_SIZE / 1024 / 1024}mb` }));
+
+// Request logging middleware (after body parsing, before routes)
+app.use(requestLogger);
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(paths.uploadsDir));
@@ -71,24 +114,32 @@ app.use(errorHandler);
 
 // Start server
 app.listen(env.PORT, () => {
-  console.log(`Server is running on ${env.API_BASE_URL}`);
-  console.log(`Environment: ${env.NODE_ENV}`);
-  console.log(`CORS allowed origins: ${env.FRONTEND_URL}`);
-  console.log(`API endpoints:`);
-  console.log(`  GET /api/stylists - Get all stylists`);
-  console.log(`  GET /api/stylists/:id - Get a single stylist by ID`);
-  console.log(`  POST /api/stylists - Register a new stylist`);
-  console.log(`  POST /api/stylists/login - Login for stylists`);
-  console.log(`  PUT /api/stylists/:id - Update a stylist profile`);
-  console.log(`  POST /api/users - Register a new user/customer`);
-  console.log(`  POST /api/users/login - Login for users/customers`);
-  console.log(`  PUT /api/users/:id - Update a user profile`);
-  console.log(`  POST /api/appointments - Create a new appointment`);
-  console.log(`  GET /api/appointments - Get appointments`);
-  console.log(`  PUT /api/appointments/:id/accept - Accept an appointment`);
-  console.log(`  PUT /api/appointments/:id/reject - Reject an appointment`);
-  console.log(`  PUT /api/appointments/:id/suggest - Suggest new date/time`);
-  console.log(`  PUT /api/appointments/:id/accept-suggestion - Accept suggestion`);
-  console.log(`  PUT /api/appointments/:id/reject-suggestion - Reject suggestion`);
-  console.log(`  GET /health - Health check`);
+  logInfo('Server started', {
+    port: env.PORT,
+    apiBaseUrl: env.API_BASE_URL,
+    environment: env.NODE_ENV,
+    corsOrigins: env.FRONTEND_URL,
+    logLevel: process.env.LOG_LEVEL || (env.isProduction() ? 'info' : 'debug'),
+  });
+  
+  logger.info('API Endpoints:', {
+    endpoints: [
+      'GET /api/stylists - Get all stylists',
+      'GET /api/stylists/:id - Get a single stylist by ID',
+      'POST /api/stylists - Register a new stylist',
+      'POST /api/stylists/login - Login for stylists',
+      'PUT /api/stylists/:id - Update a stylist profile',
+      'POST /api/users - Register a new user/customer',
+      'POST /api/users/login - Login for users/customers',
+      'PUT /api/users/:id - Update a user profile',
+      'POST /api/appointments - Create a new appointment',
+      'GET /api/appointments - Get appointments',
+      'PUT /api/appointments/:id/accept - Accept an appointment',
+      'PUT /api/appointments/:id/reject - Reject an appointment',
+      'PUT /api/appointments/:id/suggest - Suggest new date/time',
+      'PUT /api/appointments/:id/accept-suggestion - Accept suggestion',
+      'PUT /api/appointments/:id/reject-suggestion - Reject suggestion',
+      'GET /health - Health check',
+    ],
+  });
 });

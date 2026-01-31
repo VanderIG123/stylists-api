@@ -42,6 +42,8 @@
 | `REGISTRATION_RATE_LIMIT_MAX` | Max registrations per window | `3` |
 | `GENERAL_RATE_LIMIT_WINDOW_MS` | General API rate limit window in milliseconds | `900000` (15 minutes) |
 | `GENERAL_RATE_LIMIT_MAX` | Max requests per window for all endpoints | `100` |
+| `LOG_LEVEL` | Logging level (error, warn, info, debug) | `info` (production), `debug` (development) |
+| `LOG_TO_FILE` | Enable file logging (true/false) | `false` (auto-enabled in production) |
 
 ## Development Setup
 
@@ -173,4 +175,8 @@ REGISTRATION_RATE_LIMIT_MAX=3
 # General API: 100 requests per 15 minutes
 GENERAL_RATE_LIMIT_WINDOW_MS=900000
 GENERAL_RATE_LIMIT_MAX=100
+
+# Logging Configuration
+LOG_LEVEL=debug
+LOG_TO_FILE=false
 ```
