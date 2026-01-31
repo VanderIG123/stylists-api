@@ -8,6 +8,14 @@ import {
   updateStylist
 } from '../controllers/stylistController.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import {
+  validateStylistRegistration,
+  validateStylistLogin,
+  validateStylistUpdate
+} from '../middleware/validation.js';
+import { param } from 'express-validator';
+import { handleValidationErrors } from '../middleware/validation.js';
+import { sanitizeRequestBody } from '../middleware/sanitization.js';
 
 const router = express.Router();
 
@@ -15,18 +23,21 @@ const router = express.Router();
 router.get('/', getAllStylists);
 
 // GET /api/stylists/:id - Get a single stylist by ID
-router.get('/:id', getStylistById);
+router.get('/:id', [
+  param('id').isInt({ min: 1 }).withMessage('Invalid stylist ID'),
+  handleValidationErrors
+], getStylistById);
 
 // POST /api/stylists - Register a new stylist
 router.post('/', upload.fields([
   { name: 'profilePicture', maxCount: 1 },
   { name: 'portfolioPictures', maxCount: 10 }
-]), asyncHandler(registerStylist));
+]), validateStylistRegistration, sanitizeRequestBody, asyncHandler(registerStylist));
 
 // POST /api/stylists/login - Login for registered stylists
-router.post('/login', asyncHandler(loginStylist));
+router.post('/login', validateStylistLogin, sanitizeRequestBody, asyncHandler(loginStylist));
 
 // PUT /api/stylists/:id - Update a stylist profile
-router.put('/:id', asyncHandler(updateStylist));
+router.put('/:id', validateStylistUpdate, sanitizeRequestBody, asyncHandler(updateStylist));
 
 export default router;

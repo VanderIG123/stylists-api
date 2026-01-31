@@ -1,8 +1,7 @@
 import { stylists, stylistCredentials, saveStylists, saveCredentials } from '../utils/dataStore.js';
 import { hashPassword, comparePassword, isPasswordHashed } from '../utils/passwordUtils.js';
 import { logError } from '../utils/errorSanitizer.js';
-
-const PORT = process.env.PORT || 3001;
+import { env } from '../config/env.js';
 
 /**
  * Get all stylists
@@ -87,11 +86,11 @@ export const registerStylist = async (req, res) => {
     
     // Generate URLs for uploaded files
     const profilePictureUrl = profilePictureFile 
-      ? `http://localhost:${PORT}/uploads/profiles/${profilePictureFile.filename}`
+      ? `${env.API_BASE_URL}/uploads/profiles/${profilePictureFile.filename}`
       : null;
     
     const portfolioUrls = portfolioFiles.map(file => 
-      `http://localhost:${PORT}/uploads/portfolio/${file.filename}`
+      `${env.API_BASE_URL}/uploads/portfolio/${file.filename}`
     );
 
     // Validate required fields (including password)
