@@ -16,6 +16,7 @@ import {
 import { param } from 'express-validator';
 import { handleValidationErrors } from '../middleware/validation.js';
 import { sanitizeRequestBody } from '../middleware/sanitization.js';
+import { loginRateLimiter, registrationRateLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
@@ -29,13 +30,13 @@ router.get('/:id', [
 ], getStylistById);
 
 // POST /api/stylists - Register a new stylist
-router.post('/', upload.fields([
+router.post('/', registrationRateLimiter, upload.fields([
   { name: 'profilePicture', maxCount: 1 },
   { name: 'portfolioPictures', maxCount: 10 }
 ]), validateStylistRegistration, sanitizeRequestBody, asyncHandler(registerStylist));
 
 // POST /api/stylists/login - Login for registered stylists
-router.post('/login', validateStylistLogin, sanitizeRequestBody, asyncHandler(loginStylist));
+router.post('/login', loginRateLimiter, validateStylistLogin, sanitizeRequestBody, asyncHandler(loginStylist));
 
 // PUT /api/stylists/:id - Update a stylist profile
 router.put('/:id', validateStylistUpdate, sanitizeRequestBody, asyncHandler(updateStylist));

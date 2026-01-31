@@ -36,6 +36,12 @@
 | `MAX_PORTFOLIO_PICTURE_SIZE` | Max portfolio image size in bytes | `10485760` (10MB) |
 | `MAX_FILE_SIZE` | Global max file size in bytes | `10485760` (10MB) |
 | `MAX_REQUEST_BODY_SIZE` | Max request body size in bytes | `52428800` (50MB) |
+| `LOGIN_RATE_LIMIT_WINDOW_MS` | Login rate limit window in milliseconds | `900000` (15 minutes) |
+| `LOGIN_RATE_LIMIT_MAX` | Max login attempts per window | `5` |
+| `REGISTRATION_RATE_LIMIT_WINDOW_MS` | Registration rate limit window in milliseconds | `3600000` (1 hour) |
+| `REGISTRATION_RATE_LIMIT_MAX` | Max registrations per window | `3` |
+| `GENERAL_RATE_LIMIT_WINDOW_MS` | General API rate limit window in milliseconds | `900000` (15 minutes) |
+| `GENERAL_RATE_LIMIT_MAX` | Max requests per window for all endpoints | `100` |
 
 ## Development Setup
 
@@ -77,6 +83,36 @@ File size limits are specified in **bytes**. Common conversions:
 - 5MB = 5,242,880 bytes
 - 10MB = 10,485,760 bytes
 - 50MB = 52,428,800 bytes
+
+## Rate Limiting
+
+Rate limiting helps protect your API from abuse and brute force attacks. All limits are configurable via environment variables:
+
+### Login Rate Limiting
+- **Purpose**: Prevents brute force attacks on login endpoints
+- **Default**: 5 attempts per 15 minutes
+- **Applies to**: `/api/users/login`, `/api/stylists/login`
+
+### Registration Rate Limiting
+- **Purpose**: Prevents spam account creation
+- **Default**: 3 registrations per hour
+- **Applies to**: `/api/users` (POST), `/api/stylists` (POST)
+
+### General API Rate Limiting
+- **Purpose**: Baseline protection for all endpoints
+- **Default**: 100 requests per 15 minutes
+- **Applies to**: All API endpoints
+
+### Rate Limit Configuration
+
+Time windows are specified in **milliseconds**. Common conversions:
+
+- 1 minute = 60,000 ms
+- 15 minutes = 900,000 ms
+- 1 hour = 3,600,000 ms
+- 1 day = 86,400,000 ms
+
+When a rate limit is exceeded, the API returns a `429 Too Many Requests` status with a message indicating when to retry.
 
 ## Security Notes
 
@@ -124,4 +160,17 @@ MAX_FILE_SIZE=10485760
 
 # Request Body Size Limit (in bytes)
 MAX_REQUEST_BODY_SIZE=52428800
+
+# Rate Limiting Configuration
+# Login: 5 attempts per 15 minutes
+LOGIN_RATE_LIMIT_WINDOW_MS=900000
+LOGIN_RATE_LIMIT_MAX=5
+
+# Registration: 3 attempts per hour
+REGISTRATION_RATE_LIMIT_WINDOW_MS=3600000
+REGISTRATION_RATE_LIMIT_MAX=3
+
+# General API: 100 requests per 15 minutes
+GENERAL_RATE_LIMIT_WINDOW_MS=900000
+GENERAL_RATE_LIMIT_MAX=100
 ```

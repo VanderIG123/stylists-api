@@ -6,6 +6,7 @@ import stylistsRoutes from './routes/stylists.js';
 import usersRoutes from './routes/users.js';
 import appointmentsRoutes from './routes/appointments.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { generalRateLimiter } from './middleware/rateLimiter.js';
 
 const app = express();
 
@@ -43,6 +44,8 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
+// Apply general rate limiting to all routes (baseline protection)
+app.use(generalRateLimiter);
 app.use(express.json({ limit: `${env.MAX_REQUEST_BODY_SIZE / 1024 / 1024}mb` }));
 app.use(express.urlencoded({ extended: true, limit: `${env.MAX_REQUEST_BODY_SIZE / 1024 / 1024}mb` }));
 
