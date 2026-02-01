@@ -16,12 +16,57 @@ export const registerUser = async (req, res) => {
       preferences
     } = req.body;
 
-    // Validate required fields
-    if (!name || !email || !password || !phone) {
+    // Validate required fields with helpful messages
+    const missingFields = [];
+    if (!name || !name.trim()) missingFields.push('Full Name');
+    if (!email || !email.trim()) missingFields.push('Email');
+    if (!password || !password.trim()) missingFields.push('Password');
+    if (!phone || !phone.trim()) missingFields.push('Phone Number');
+    
+    if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields',
-        required: ['name', 'email', 'password', 'phone']
+        message: `Please fill in all required fields: ${missingFields.join(', ')}`,
+        missingFields: missingFields
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid email address (e.g., example@domain.com)',
+        field: 'email'
+      });
+    }
+
+    // Validate password length
+    if (password.trim().length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long',
+        field: 'password'
+      });
+    }
+
+    // Validate phone number format
+    const phoneRegex = /^[\d\s\-\(\)\.\+]+$/;
+    if (!phoneRegex.test(phone.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number can only contain numbers and formatting characters (spaces, hyphens, parentheses, dots, or +). Letters are not allowed.',
+        field: 'phone'
+      });
+    }
+    
+    // Check phone number length
+    const phoneDigits = phone.replace(/\D/g, '');
+    if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number must be between 7 and 15 digits',
+        field: 'phone'
       });
     }
 
@@ -30,7 +75,9 @@ export const registerUser = async (req, res) => {
     if (userCredentials.has(emailLower)) {
       return res.status(400).json({
         success: false,
-        message: 'Email already registered. Please use a different email or log in.'
+        message: 'This email address is already registered. Please use a different email or try logging in instead.',
+        field: 'email',
+        suggestion: 'If this is your account, please use the login page instead.'
       });
     }
 
@@ -65,10 +112,30 @@ export const registerUser = async (req, res) => {
       data: newUser
     });
   } catch (error) {
-    logError(error, 'registerUser');
+    logError(error, {
+      method: 'registerUser',
+      email: req.body?.email,
+      error: error.message
+    });
+    
+    // Provide more helpful error messages based on error type
+    if (error.code === 'ENOENT' || error.message.includes('file')) {
+      return res.status(500).json({
+        success: false,
+        message: 'Unable to save your account. Please try again in a moment. If the problem persists, contact support.'
+      });
+    }
+    
+    if (error.message.includes('password') || error.message.includes('hash')) {
+      return res.status(500).json({
+        success: false,
+        message: 'There was an issue processing your password. Please try again with a different password.'
+      });
+    }
+    
     res.status(500).json({
       success: false,
-      message: 'Error registering user. Please try again.'
+      message: 'We encountered an issue creating your account. Please check your information and try again. If the problem continues, contact support.'
     });
   }
 };

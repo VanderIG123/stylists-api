@@ -8,14 +8,70 @@ export const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   
   if (!errors.isEmpty()) {
+    const errorArray = errors.array();
+    const fieldErrors = {};
+    const errorMessages = [];
+    
+    // Group errors by field and create helpful messages
+    errorArray.forEach(err => {
+      const field = err.path || err.param;
+      const message = err.msg;
+      
+      // Map field names to user-friendly names
+      const fieldNameMap = {
+        'name': 'Full Name',
+        'email': 'Email',
+        'password': 'Password',
+        'phone': 'Phone Number',
+        'address': 'Address',
+        'preferences': 'Preferences'
+      };
+      
+      const friendlyFieldName = fieldNameMap[field] || field;
+      
+      // Create more helpful error messages
+      let helpfulMessage = message;
+      
+      if (message.includes('required')) {
+        helpfulMessage = `${friendlyFieldName} is required. Please fill in this field.`;
+      } else if (message.includes('email')) {
+        helpfulMessage = `Please enter a valid email address (e.g., example@domain.com)`;
+      } else if (message.includes('phone')) {
+        if (message.includes('format')) {
+          helpfulMessage = `Phone number can only contain numbers and formatting characters (spaces, hyphens, parentheses, dots, or +).`;
+        } else if (message.includes('digits')) {
+          helpfulMessage = `Phone number must be between 7 and 15 digits.`;
+        } else {
+          helpfulMessage = `Please enter a valid phone number.`;
+        }
+      } else if (message.includes('password')) {
+        if (message.includes('length')) {
+          helpfulMessage = `Password must be between 6 and 128 characters long.`;
+        } else {
+          helpfulMessage = `Please enter a valid password.`;
+        }
+      } else if (message.includes('length')) {
+        helpfulMessage = `${friendlyFieldName} ${message}`;
+      }
+      
+      fieldErrors[field] = helpfulMessage;
+      errorMessages.push(helpfulMessage);
+    });
+    
+    // Create a general message
+    const generalMessage = errorMessages.length === 1 
+      ? errorMessages[0]
+      : `Please fix the following issues: ${errorMessages.slice(0, 3).join(', ')}${errorMessages.length > 3 ? '...' : ''}`;
+    
     return res.status(400).json({
       success: false,
-      message: 'Validation failed',
-      errors: errors.array().map(err => ({
+      message: generalMessage,
+      errors: errorArray.map(err => ({
         field: err.path || err.param,
-        message: err.msg,
+        message: fieldErrors[err.path || err.param] || err.msg,
         value: err.value
-      }))
+      })),
+      fieldErrors: fieldErrors
     });
   }
   
