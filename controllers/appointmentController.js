@@ -14,7 +14,8 @@ export const createAppointment = (req, res) => {
       time,
       customerName,
       customerEmail,
-      customerPhone
+      customerPhone,
+      conversationPreference
     } = req.body;
 
     if (!stylistId || !purpose || !date || !time) {
@@ -37,6 +38,13 @@ export const createAppointment = (req, res) => {
     const maxId = appointments.length > 0 ? Math.max(...appointments.map(a => a.id)) : 0;
     const newId = maxId + 1;
 
+    // Validate and set conversation preference
+    const validPreferences = ['quiet', 'chat', 'no-preference'];
+    const finalConversationPreference = conversationPreference && 
+      validPreferences.includes(conversationPreference.trim()) 
+      ? conversationPreference.trim() 
+      : 'no-preference';
+    
     // Create new appointment
     const newAppointment = {
       id: newId,
@@ -49,6 +57,7 @@ export const createAppointment = (req, res) => {
       customerEmail: customerEmail ? customerEmail.trim().toLowerCase() : '',
       customerPhone: customerPhone ? customerPhone.trim() : '',
       services: req.body.services || [],
+      conversationPreference: finalConversationPreference,
       status: 'pending',
       suggestedDate: null,
       suggestedTime: null,
