@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { env } from '../config/env.js';
 
 /**
@@ -15,10 +15,12 @@ export const loginRateLimiter = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  // Use IP address as the key for rate limiting
+  // Use IP address as the key for rate limiting (with proper IPv6 handling)
   keyGenerator: (req) => {
     // Try to get the real IP address (useful behind proxies)
-    return req.ip || req.connection.remoteAddress || 'unknown';
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    // Use ipKeyGenerator helper to properly handle IPv6 addresses
+    return ip === 'unknown' ? 'unknown' : ipKeyGenerator(ip);
   },
   // Custom handler for when limit is exceeded
   handler: (req, res) => {
@@ -48,7 +50,8 @@ export const registrationRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.ip || req.connection.remoteAddress || 'unknown';
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    return ip === 'unknown' ? 'unknown' : ipKeyGenerator(ip);
   },
   handler: (req, res) => {
     const retryAfter = Math.ceil(parseInt(process.env.REGISTRATION_RATE_LIMIT_WINDOW_MS || '3600000', 10) / 60000);
@@ -71,7 +74,8 @@ export const generalRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.ip || req.connection.remoteAddress || 'unknown';
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    return ip === 'unknown' ? 'unknown' : ipKeyGenerator(ip);
   },
   handler: (req, res) => {
     res.status(429).json({
