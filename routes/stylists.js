@@ -17,6 +17,7 @@ import { param } from 'express-validator';
 import { handleValidationErrors } from '../middleware/validation.js';
 import { sanitizeRequestBody } from '../middleware/sanitization.js';
 import { loginRateLimiter, registrationRateLimiter } from '../middleware/rateLimiter.js';
+import { authenticate, requireOwnership, requireUserType } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -38,7 +39,14 @@ router.post('/', registrationRateLimiter, upload.fields([
 // POST /api/stylists/login - Login for registered stylists
 router.post('/login', loginRateLimiter, validateStylistLogin, sanitizeRequestBody, asyncHandler(loginStylist));
 
-// PUT /api/stylists/:id - Update a stylist profile
-router.put('/:id', validateStylistUpdate, sanitizeRequestBody, asyncHandler(updateStylist));
+// PUT /api/stylists/:id - Update a stylist profile (requires authentication and ownership)
+router.put('/:id', 
+  authenticate, 
+  requireUserType('stylist'), 
+  requireOwnership,
+  validateStylistUpdate, 
+  sanitizeRequestBody, 
+  asyncHandler(updateStylist)
+);
 
 export default router;

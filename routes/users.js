@@ -12,6 +12,7 @@ import {
 } from '../middleware/validation.js';
 import { sanitizeRequestBody } from '../middleware/sanitization.js';
 import { loginRateLimiter, registrationRateLimiter } from '../middleware/rateLimiter.js';
+import { authenticate, requireOwnership, requireUserType } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -21,7 +22,14 @@ router.post('/', registrationRateLimiter, validateUserRegistration, sanitizeRequ
 // POST /api/users/login - Login for users/customers
 router.post('/login', loginRateLimiter, validateUserLogin, sanitizeRequestBody, asyncHandler(loginUser));
 
-// PUT /api/users/:id - Update a user profile
-router.put('/:id', validateUserUpdate, sanitizeRequestBody, asyncHandler(updateUser));
+// PUT /api/users/:id - Update a user profile (requires authentication and ownership)
+router.put('/:id', 
+  authenticate, 
+  requireUserType('user'), 
+  requireOwnership,
+  validateUserUpdate, 
+  sanitizeRequestBody, 
+  asyncHandler(updateUser)
+);
 
 export default router;

@@ -2,6 +2,7 @@ import { stylists, stylistCredentials, saveStylists, saveCredentials } from '../
 import { hashPassword, comparePassword, isPasswordHashed } from '../utils/passwordUtils.js';
 import { logError, logInfo, logDebug } from '../utils/logger.js';
 import { env } from '../config/env.js';
+import { generateToken } from '../utils/jwtUtils.js';
 
 /**
  * Get all stylists
@@ -264,11 +265,19 @@ export const loginStylist = async (req, res) => {
       });
     }
 
-    // Return stylist data (without password)
+    // Generate JWT token
+    const token = generateToken({
+      id: stylist.id,
+      email: stylist.email,
+      type: 'stylist'
+    });
+
+    // Return stylist data with token (without password)
     res.json({
       success: true,
       message: 'Login successful',
-      data: stylist
+      data: stylist,
+      token: token
     });
   } catch (error) {
     logError(error, 'loginStylist');

@@ -1,6 +1,7 @@
 import { users, userCredentials, saveUsers, saveCredentials } from '../utils/dataStore.js';
 import { hashPassword, comparePassword, isPasswordHashed } from '../utils/passwordUtils.js';
 import { logError } from '../utils/logger.js';
+import { generateToken } from '../utils/jwtUtils.js';
 
 /**
  * Register a new user/customer
@@ -193,11 +194,19 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Return user data (without password)
+    // Generate JWT token
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+      type: 'user'
+    });
+
+    // Return user data with token (without password)
     res.json({
       success: true,
       message: 'Login successful',
-      data: user
+      data: user,
+      token: token
     });
   } catch (error) {
     logError(error, 'loginUser');

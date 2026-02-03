@@ -28,6 +28,10 @@ export const env = {
   // Request body size limits (in bytes)
   MAX_REQUEST_BODY_SIZE: parseInt(process.env.MAX_REQUEST_BODY_SIZE || '52428800', 10), // 50MB
   
+  // JWT configuration
+  JWT_SECRET: process.env.JWT_SECRET || ((process.env.NODE_ENV === 'production' ? null : 'dev-secret-key-change-in-production')),
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d', // 7 days default
+  
   // Helper functions
   isDevelopment: () => env.NODE_ENV === 'development',
   isProduction: () => env.NODE_ENV === 'production',
@@ -36,7 +40,7 @@ export const env = {
 
 // Validate required environment variables in production
 if (env.isProduction()) {
-  const requiredVars = ['API_BASE_URL', 'FRONTEND_URL'];
+  const requiredVars = ['API_BASE_URL', 'FRONTEND_URL', 'JWT_SECRET'];
   const missingVars = requiredVars.filter(varName => !process.env[varName]);
   
   if (missingVars.length > 0) {
@@ -45,4 +49,10 @@ if (env.isProduction()) {
     console.error('Please set these variables in your .env file or environment.');
     process.exit(1);
   }
+}
+
+// Warn if using default JWT secret in production
+if (env.isProduction() && !process.env.JWT_SECRET) {
+  console.error('ERROR: JWT_SECRET must be set in production!');
+  process.exit(1);
 }

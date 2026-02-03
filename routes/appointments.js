@@ -16,28 +16,67 @@ import {
   validateGetAppointments
 } from '../middleware/validation.js';
 import { sanitizeRequestBody, sanitizeQueryParams } from '../middleware/sanitization.js';
+import { authenticate, requireUserType } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// POST /api/appointments - Create a new appointment
-router.post('/', validateAppointmentCreation, sanitizeRequestBody, asyncHandler(createAppointment));
+// POST /api/appointments - Create a new appointment (requires authentication)
+router.post('/', 
+  authenticate, 
+  requireUserType(['user', 'stylist']), 
+  validateAppointmentCreation, 
+  sanitizeRequestBody, 
+  asyncHandler(createAppointment)
+);
 
-// GET /api/appointments - Get appointments (optionally filtered by userId or stylistId)
-router.get('/', validateGetAppointments, sanitizeQueryParams, asyncHandler(getAppointments));
+// GET /api/appointments - Get appointments (requires authentication)
+router.get('/', 
+  authenticate, 
+  requireUserType(['user', 'stylist']), 
+  validateGetAppointments, 
+  sanitizeQueryParams, 
+  asyncHandler(getAppointments)
+);
 
-// PUT /api/appointments/:id/accept - Accept an appointment
-router.put('/:id/accept', validateAppointmentId, asyncHandler(acceptAppointment));
+// PUT /api/appointments/:id/accept - Accept an appointment (requires authentication)
+router.put('/:id/accept', 
+  authenticate, 
+  requireUserType(['user', 'stylist']), 
+  validateAppointmentId, 
+  asyncHandler(acceptAppointment)
+);
 
-// PUT /api/appointments/:id/reject - Reject an appointment
-router.put('/:id/reject', validateAppointmentId, asyncHandler(rejectAppointment));
+// PUT /api/appointments/:id/reject - Reject an appointment (requires authentication)
+router.put('/:id/reject', 
+  authenticate, 
+  requireUserType(['user', 'stylist']), 
+  validateAppointmentId, 
+  asyncHandler(rejectAppointment)
+);
 
-// PUT /api/appointments/:id/suggest - Suggest new date/time for an appointment
-router.put('/:id/suggest', validateAppointmentSuggestion, sanitizeRequestBody, asyncHandler(suggestAppointment));
+// PUT /api/appointments/:id/suggest - Suggest new date/time for an appointment (requires authentication)
+router.put('/:id/suggest', 
+  authenticate, 
+  requireUserType(['user', 'stylist']), 
+  validateAppointmentSuggestion, 
+  sanitizeRequestBody, 
+  asyncHandler(suggestAppointment)
+);
 
-// PUT /api/appointments/:id/accept-suggestion - Customer accepts suggested date/time
-router.put('/:id/accept-suggestion', validateAppointmentId, asyncHandler(acceptSuggestion));
+// PUT /api/appointments/:id/accept-suggestion - Customer accepts suggested date/time (requires authentication)
+router.put('/:id/accept-suggestion', 
+  authenticate, 
+  requireUserType(['user', 'stylist']), 
+  validateAppointmentId, 
+  asyncHandler(acceptSuggestion)
+);
 
-// PUT /api/appointments/:id/reject-suggestion - Customer rejects suggested date/time
-router.put('/:id/reject-suggestion', validateAppointmentId, asyncHandler(rejectSuggestion));
+// PUT /api/appointments/:id/reject-suggestion - Customer rejects suggested date/time (requires authentication)
+router.put('/:id/reject-suggestion', 
+  authenticate, 
+  requireUserType(['user', 'stylist']), 
+  validateAppointmentId, 
+  asyncHandler(rejectSuggestion)
+);
 
 export default router;

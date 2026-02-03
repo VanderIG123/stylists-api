@@ -27,6 +27,7 @@
 | `PORT` | Server port | `3001` |
 | `API_BASE_URL` | Base URL for API (used in file URLs) | `http://localhost:3001` or `https://api.yourdomain.com` |
 | `FRONTEND_URL` | Frontend URL(s) for CORS | `http://localhost:5173` or `https://yourdomain.com` |
+| `JWT_SECRET` | Secret key for JWT token signing (REQUIRED in production) | Generate a strong random string |
 
 ### Optional Variables (with defaults)
 
@@ -44,6 +45,8 @@
 | `GENERAL_RATE_LIMIT_MAX` | Max requests per window for all endpoints | `100` |
 | `LOG_LEVEL` | Logging level (error, warn, info, debug) | `info` (production), `debug` (development) |
 | `LOG_TO_FILE` | Enable file logging (true/false) | `false` (auto-enabled in production) |
+| `JWT_SECRET` | Secret key for JWT token signing | `dev-secret-key-change-in-production` (dev only) |
+| `JWT_EXPIRES_IN` | JWT token expiration time | `7d` (7 days) |
 
 ## Development Setup
 
@@ -65,9 +68,11 @@ NODE_ENV=production
 PORT=3001
 API_BASE_URL=https://api.yourdomain.com
 FRONTEND_URL=https://yourdomain.com
+JWT_SECRET=your-very-strong-random-secret-key-here
+JWT_EXPIRES_IN=7d
 ```
 
-**Important:** In production, `API_BASE_URL` and `FRONTEND_URL` are **required**. The server will exit if they are not set.
+**Important:** In production, `API_BASE_URL`, `FRONTEND_URL`, and `JWT_SECRET` are **required**. The server will exit if they are not set.
 
 ## Multiple Frontend Origins
 
@@ -116,12 +121,41 @@ Time windows are specified in **milliseconds**. Common conversions:
 
 When a rate limit is exceeded, the API returns a `429 Too Many Requests` status with a message indicating when to retry.
 
+## JWT Authentication
+
+The API uses JWT (JSON Web Tokens) for authentication. When users or stylists log in, they receive a JWT token that must be included in subsequent requests.
+
+### JWT Configuration
+
+- **JWT_SECRET**: A strong, random secret key used to sign tokens. **CRITICAL**: Use a different secret for production!
+- **JWT_EXPIRES_IN**: Token expiration time (e.g., `7d` for 7 days, `24h` for 24 hours, `1h` for 1 hour)
+
+### Generating a Strong JWT Secret
+
+For production, generate a strong random secret:
+
+```bash
+# Using Node.js
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+
+# Using OpenSSL
+openssl rand -hex 64
+```
+
+### Token Usage
+
+- Tokens are returned in the login response: `{ success: true, data: {...}, token: "..." }`
+- Include tokens in requests: `Authorization: Bearer <token>`
+- Tokens expire after the configured time period
+- Expired tokens require re-authentication
+
 ## Security Notes
 
 1. **Never commit `.env` to version control** - It's already in `.gitignore`
 2. **Use `.env.example` as a template** - Commit this file with example values
 3. **Keep production `.env` secure** - Store it securely on your production server
-4. **Rotate secrets regularly** - If you add API keys or secrets later
+4. **Rotate secrets regularly** - Change `JWT_SECRET` periodically for security
+5. **Use strong JWT secrets** - Never use default secrets in production
 
 ## Troubleshooting
 
@@ -179,4 +213,8 @@ GENERAL_RATE_LIMIT_MAX=100
 # Logging Configuration
 LOG_LEVEL=debug
 LOG_TO_FILE=false
+
+# JWT Configuration
+JWT_SECRET=dev-secret-key-change-in-production
+JWT_EXPIRES_IN=7d
 ```
