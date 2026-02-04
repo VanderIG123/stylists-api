@@ -19,9 +19,13 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // In development, allow all localhost origins for easier testing
+    // In development, allow all localhost origins and local network IPs for mobile testing
     if (env.isDevelopment()) {
-      if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+      if (origin.startsWith('http://localhost:') || 
+          origin.startsWith('http://127.0.0.1:') ||
+          origin.startsWith('http://192.168.') ||
+          origin.startsWith('http://10.') ||
+          origin.startsWith('http://172.')) {
         return callback(null, true);
       }
     }
@@ -112,8 +116,8 @@ app.get('/health', (req, res) => {
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
-// Start server
-app.listen(env.PORT, () => {
+// Start server - listen on all network interfaces (0.0.0.0) to allow mobile access
+app.listen(env.PORT, '0.0.0.0', () => {
   logInfo('Server started', {
     port: env.PORT,
     apiBaseUrl: env.API_BASE_URL,
