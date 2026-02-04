@@ -101,9 +101,9 @@ export const validateUserRegistration = [
   body('phone')
     .trim()
     .notEmpty().withMessage('Phone number is required')
-    .matches(/^[\d\s\-\(\)\.]+$/).withMessage('Invalid phone number format')
+    .matches(/^[\d\s\-\(\)\.\+]+$/).withMessage('Invalid phone number format')
     .custom((value) => {
-      const cleaned = value.replace(/[\s\-\(\)\.]/g, '');
+      const cleaned = value.replace(/[\s\-\(\)\.\+]/g, '');
       if (cleaned.length < 7 || cleaned.length > 15) {
         throw new Error('Phone number must be between 7 and 15 digits');
       }
@@ -147,7 +147,7 @@ export const validateUserUpdate = [
     .optional()
     .trim()
     .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters')
-    .matches(/^[a-zA-Z\s'-]+$/).withMessage('Name can only contain letters, spaces, hyphens, and apostrophes'),
+    .matches(/^[a-zA-Z\s'\-\.]+$/).withMessage('Name can only contain letters, spaces, hyphens, apostrophes, and periods'),
   
   body('email')
     .optional()
@@ -159,10 +159,10 @@ export const validateUserUpdate = [
   body('phone')
     .optional()
     .trim()
-    .matches(/^[\d\s\-\(\)\.]+$/).withMessage('Invalid phone number format')
+    .matches(/^[\d\s\-\(\)\.\+]+$/).withMessage('Invalid phone number format')
     .custom((value) => {
       if (!value) return true;
-      const cleaned = value.replace(/[\s\-\(\)\.]/g, '');
+      const cleaned = value.replace(/[\s\-\(\)\.\+]/g, '');
       if (cleaned.length < 7 || cleaned.length > 15) {
         throw new Error('Phone number must be between 7 and 15 digits');
       }
@@ -192,7 +192,7 @@ export const validateStylistRegistration = [
     .trim()
     .notEmpty().withMessage('Name is required')
     .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters')
-    .matches(/^[a-zA-Z\s'-]+$/).withMessage('Name can only contain letters, spaces, hyphens, and apostrophes'),
+    .matches(/^[a-zA-Z\s'\-\.]+$/).withMessage('Name can only contain letters, spaces, hyphens, apostrophes, and periods'),
   
   body('email')
     .trim()
@@ -208,9 +208,9 @@ export const validateStylistRegistration = [
   body('phone')
     .trim()
     .notEmpty().withMessage('Phone number is required')
-    .matches(/^[\d\s\-\(\)\.]+$/).withMessage('Invalid phone number format')
+    .matches(/^[\d\s\-\(\)\.\+]+$/).withMessage('Invalid phone number format')
     .custom((value) => {
-      const cleaned = value.replace(/[\s\-\(\)\.]/g, '');
+      const cleaned = value.replace(/[\s\-\(\)\.\+]/g, '');
       if (cleaned.length < 7 || cleaned.length > 15) {
         throw new Error('Phone number must be between 7 and 15 digits');
       }
@@ -358,7 +358,7 @@ export const validateStylistUpdate = [
     .optional()
     .trim()
     .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters')
-    .matches(/^[a-zA-Z\s'-]+$/).withMessage('Name can only contain letters, spaces, hyphens, and apostrophes'),
+    .matches(/^[a-zA-Z\s'\-\.]+$/).withMessage('Name can only contain letters, spaces, hyphens, apostrophes, and periods'),
   
   body('email')
     .optional()
@@ -370,10 +370,10 @@ export const validateStylistUpdate = [
   body('phone')
     .optional()
     .trim()
-    .matches(/^[\d\s\-\(\)\.]+$/).withMessage('Invalid phone number format')
+    .matches(/^[\d\s\-\(\)\.\+]+$/).withMessage('Invalid phone number format')
     .custom((value) => {
       if (!value) return true;
-      const cleaned = value.replace(/[\s\-\(\)\.]/g, '');
+      const cleaned = value.replace(/[\s\-\(\)\.\+]/g, '');
       if (cleaned.length < 7 || cleaned.length > 15) {
         throw new Error('Phone number must be between 7 and 15 digits');
       }
@@ -489,10 +489,10 @@ export const validateAppointmentCreation = [
   body('customerPhone')
     .optional()
     .trim()
-    .matches(/^[\d\s\-\(\)\.]+$/).withMessage('Invalid phone number format')
+    .matches(/^[\d\s\-\(\)\.\+]+$/).withMessage('Invalid phone number format')
     .custom((value) => {
       if (!value) return true;
-      const cleaned = value.replace(/[\s\-\(\)\.]/g, '');
+      const cleaned = value.replace(/[\s\-\(\)\.\+]/g, '');
       if (cleaned.length < 7 || cleaned.length > 15) {
         throw new Error('Phone number must be between 7 and 15 digits');
       }
