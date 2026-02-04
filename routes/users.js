@@ -2,13 +2,17 @@ import express from 'express';
 import {
   registerUser,
   loginUser,
-  updateUser
+  updateUser,
+  addToRecentlyViewed,
+  getRecentlyViewed
 } from '../controllers/userController.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import {
   validateUserRegistration,
   validateUserLogin,
-  validateUserUpdate
+  validateUserUpdate,
+  validateRecentlyViewed,
+  validateGetRecentlyViewed
 } from '../middleware/validation.js';
 import { sanitizeRequestBody } from '../middleware/sanitization.js';
 import { loginRateLimiter, registrationRateLimiter } from '../middleware/rateLimiter.js';
@@ -30,6 +34,25 @@ router.put('/:id',
   validateUserUpdate, 
   sanitizeRequestBody, 
   asyncHandler(updateUser)
+);
+
+// POST /api/users/:id/recently-viewed - Add a stylist to user's recently viewed list
+router.post('/:id/recently-viewed',
+  authenticate,
+  requireUserType('user'),
+  requireOwnership,
+  validateRecentlyViewed,
+  sanitizeRequestBody,
+  asyncHandler(addToRecentlyViewed)
+);
+
+// GET /api/users/:id/recently-viewed - Get user's recently viewed stylists
+router.get('/:id/recently-viewed',
+  authenticate,
+  requireUserType('user'),
+  requireOwnership,
+  validateGetRecentlyViewed,
+  asyncHandler(getRecentlyViewed)
 );
 
 export default router;

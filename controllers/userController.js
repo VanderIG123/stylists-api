@@ -1,4 +1,4 @@
-import { users, userCredentials, saveUsers, saveCredentials } from '../utils/dataStore.js';
+import { users, userCredentials, saveUsers, saveCredentials, recentlyViewed, saveRecentlyViewed, stylists } from '../utils/dataStore.js';
 import { hashPassword, comparePassword, isPasswordHashed } from '../utils/passwordUtils.js';
 import { logError } from '../utils/logger.js';
 import { generateToken } from '../utils/jwtUtils.js';
@@ -282,6 +282,121 @@ export const updateUser = (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating user profile. Please try again.'
+    });
+  }
+};
+
+/**
+ * Add a stylist to user's recently viewed list
+ */
+export const addToRecentlyViewed = (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { stylistId } = req.body;
+
+    // Validate user ID
+    if (!userId || isNaN(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID'
+      });
+    }
+
+    // Validate stylist ID
+    if (!stylistId || isNaN(stylistId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid stylist ID'
+      });
+    }
+
+    // Check if user exists
+    const user = users.find(u => u.id === userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if stylist exists
+    const stylist = stylists.find(s => s.id === stylistId);
+    if (!stylist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Stylist not found'
+      });
+    }
+
+    // Get user's recently viewed list
+    const userRecentlyViewed = recentlyViewed[userId] || [];
+
+    // Remove if already in list (to move to front)
+    const filtered = userRecentlyViewed.filter(id => id !== stylistId);
+
+    // Add to front and limit to 20 most recent
+    const updated = [stylistId, ...filtered].slice(0, 20);
+
+    // Update recently viewed
+    recentlyViewed[userId] = updated;
+    saveRecentlyViewed();
+
+    res.json({
+      success: true,
+      message: 'Stylist added to recently viewed',
+      data: updated
+    });
+  } catch (error) {
+    logError(error, 'addToRecentlyViewed');
+    res.status(500).json({
+      success: false,
+      message: 'Error adding to recently viewed. Please try again.'
+    });
+  }
+};
+
+/**
+ * Get user's recently viewed stylists
+ */
+export const getRecentlyViewed = (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+
+    // Validate user ID
+    if (!userId || isNaN(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID'
+      });
+    }
+
+    // Check if user exists
+    const user = users.find(u => u.id === userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Get user's recently viewed list
+    const viewedIds = recentlyViewed[userId] || [];
+
+    // Get full stylist objects
+    const viewedStylists = viewedIds
+      .map(id => stylists.find(s => s.id === id))
+      .filter(Boolean); // Remove any undefined (stylists that no longer exist)
+
+    res.json({
+      success: true,
+      data: viewedStylists,
+      count: viewedStylists.length
+    });
+  } catch (error) {
+    logError(error, 'getRecentlyViewed');
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching recently viewed. Please try again.'
     });
   }
 };

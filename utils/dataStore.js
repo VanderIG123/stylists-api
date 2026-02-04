@@ -6,6 +6,7 @@ import { stylists as initialStylists } from '../data/stylists.js';
 let stylists = readJSONFile(paths.stylistsFile, initialStylists);
 let users = readJSONFile(paths.usersFile, []);
 let appointments = readJSONFile(paths.appointmentsFile, []);
+let recentlyViewed = readJSONFile(paths.recentlyViewedFile, {});
 
 // Load credentials or initialize
 const credentialsData = readJSONFile(paths.credentialsFile, { stylists: {}, users: {} });
@@ -48,5 +49,9 @@ export const saveAppointments = () => {
   writeJSONFile(paths.appointmentsFile, appointments);
 };
 
+export const saveRecentlyViewed = () => {
+  writeJSONFile(paths.recentlyViewedFile, recentlyViewed);
+};
+
 // Export data stores (these are mutable arrays/maps that controllers will use)
-export { stylists, users, appointments, stylistCredentials, userCredentials };
+export { stylists, users, appointments, recentlyViewed, stylistCredentials, userCredentials };

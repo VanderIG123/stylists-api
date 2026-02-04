@@ -550,3 +550,23 @@ export const validateGetAppointments = [
   
   handleValidationErrors
 ];
+
+// ==================== Recently Viewed Validation Rules ====================
+
+export const validateRecentlyViewed = [
+  param('id')
+    .isInt({ min: 1 }).withMessage('Invalid user ID'),
+  
+  body('stylistId')
+    .notEmpty().withMessage('Stylist ID is required')
+    .isInt({ min: 1 }).withMessage('Invalid stylist ID'),
+  
+  handleValidationErrors
+];
+
+export const validateGetRecentlyViewed = [
+  param('id')
+    .isInt({ min: 1 }).withMessage('Invalid user ID'),
+  
+  handleValidationErrors
+];

@@ -23,6 +23,7 @@ export const paths = {
   usersFile: join(dataDir, 'users.json'),
   appointmentsFile: join(dataDir, 'appointments.json'),
   credentialsFile: join(dataDir, 'credentials.json'),
+  recentlyViewedFile: join(dataDir, 'recentlyViewed.json'),
   uploadsDir,
   profilesDir,
   portfolioDir
