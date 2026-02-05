@@ -34,6 +34,12 @@ export const createAppointment = (req, res) => {
       });
     }
 
+    // Use authenticated user's ID if available (from JWT token)
+    // This ensures the userId matches the authenticated user
+    const finalUserId = req.user && req.user.type === 'user' 
+      ? req.user.id 
+      : (userId ? parseInt(userId) : null);
+
     // Generate new appointment ID
     const maxId = appointments.length > 0 ? Math.max(...appointments.map(a => a.id)) : 0;
     const newId = maxId + 1;
@@ -49,7 +55,7 @@ export const createAppointment = (req, res) => {
     const newAppointment = {
       id: newId,
       stylistId: parseInt(stylistId),
-      userId: userId ? parseInt(userId) : null,
+      userId: finalUserId,
       purpose: purpose.trim(),
       date: date.trim(),
       time: time.trim(),

@@ -85,13 +85,41 @@ export const registerStylist = async (req, res) => {
     const profilePictureFile = req.files?.['profilePicture']?.[0];
     const portfolioFiles = req.files?.['portfolioPictures'] || [];
     
+    // Get the base URL from the request (works for both localhost and mobile IP)
+    // This ensures images are accessible from the same origin as the request
+    const getBaseUrl = () => {
+      // Use request host header (most reliable for mobile)
+      const host = req.get('host');
+      const protocol = req.protocol || (req.secure ? 'https' : 'http');
+      
+      if (host) {
+        return `${protocol}://${host}`;
+      }
+      
+      // Fallback: try to extract from origin/referer
+      const origin = req.headers.origin || req.headers.referer;
+      if (origin) {
+        try {
+          const url = new URL(origin);
+          return `${url.protocol}//${url.hostname}:${env.PORT}`;
+        } catch (e) {
+          // Continue to next fallback
+        }
+      }
+      
+      // Final fallback: use configured API_BASE_URL
+      return env.API_BASE_URL || `http://localhost:${env.PORT}`;
+    };
+    
+    const baseUrl = getBaseUrl();
+    
     // Generate URLs for uploaded files
     const profilePictureUrl = profilePictureFile 
-      ? `${env.API_BASE_URL}/uploads/profiles/${profilePictureFile.filename}`
+      ? `${baseUrl}/uploads/profiles/${profilePictureFile.filename}`
       : null;
     
     const portfolioUrls = portfolioFiles.map(file => 
-      `${env.API_BASE_URL}/uploads/portfolio/${file.filename}`
+      `${baseUrl}/uploads/portfolio/${file.filename}`
     );
 
     // Validate required fields (including password)

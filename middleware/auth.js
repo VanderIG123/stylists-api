@@ -9,12 +9,20 @@ export const authenticate = (req, res, next) => {
   try {
     // Extract token from Authorization header
     const authHeader = req.headers.authorization;
+    
+    if (!authHeader) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required. Please log in.'
+      });
+    }
+    
     const token = extractTokenFromHeader(authHeader);
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'Authentication required. Please log in.'
+        message: 'Invalid authorization header format. Expected: Bearer <token>'
       });
     }
 
@@ -40,7 +48,7 @@ export const authenticate = (req, res, next) => {
     logError(error, 'authenticate');
     return res.status(500).json({
       success: false,
-      message: 'Authentication error. Please try again.'
+      message: `Authentication error: ${error.message}. Please try again.`
     });
   }
 };

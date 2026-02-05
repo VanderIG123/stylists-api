@@ -24,7 +24,22 @@ export const handleValidationErrors = (req, res, next) => {
         'password': 'Password',
         'phone': 'Phone Number',
         'address': 'Address',
-        'preferences': 'Preferences'
+        'preferences': 'Preferences',
+        'specialty': 'Specialty',
+        'hairTextureTypes': 'Hair Texture Types',
+        'yearsOfExperience': 'Years of Experience',
+        'rate': 'Rate',
+        'hours': 'Business Hours',
+        'currentAvailability': 'Current Availability',
+        'willingToTravel': 'Willing to Travel',
+        'about': 'About Section',
+        'accommodations': 'Accommodations',
+        'lastMinuteBookingsAllowed': 'Last Minute Bookings',
+        'streetParkingAvailable': 'Street Parking',
+        'cancellationPolicy': 'Cancellation Policy',
+        'acceptedPaymentTypes': 'Accepted Payment Types',
+        'services': 'Services',
+        'products': 'Products'
       };
       
       const friendlyFieldName = fieldNameMap[field] || field;
@@ -34,6 +49,19 @@ export const handleValidationErrors = (req, res, next) => {
       
       if (message.includes('required')) {
         helpfulMessage = `${friendlyFieldName} is required. Please fill in this field.`;
+      } else if (message.includes('pattern') || message.includes('match') || message.includes('expected pattern')) {
+        // Handle pattern matching errors
+        if (field === 'name') {
+          helpfulMessage = `${friendlyFieldName} can only contain letters, spaces, hyphens, apostrophes, and periods. Numbers and special characters are not allowed.`;
+        } else if (field === 'phone') {
+          helpfulMessage = `${friendlyFieldName} can only contain numbers and formatting characters (spaces, hyphens, parentheses, dots, or +). Letters are not allowed.`;
+        } else if (field === 'date' || message.includes('YYYY-MM-DD')) {
+          helpfulMessage = `${friendlyFieldName} must be in YYYY-MM-DD format (e.g., 2024-12-25).`;
+        } else if (field === 'time' || message.includes('HH:MM')) {
+          helpfulMessage = `${friendlyFieldName} must be in HH:MM format using 24-hour time (e.g., 14:30).`;
+        } else {
+          helpfulMessage = `${friendlyFieldName} contains invalid characters. Please check the format.`;
+        }
       } else if (message.includes('email')) {
         helpfulMessage = `Please enter a valid email address (e.g., example@domain.com)`;
       } else if (message.includes('phone')) {
